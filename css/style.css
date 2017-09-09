@@ -1,0 +1,108 @@
+* {
+  color: #ccc;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; }
+
+body {
+  background-color: #333;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center; }
+
+/* Test align */
+body > div {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  overflow-x: hidden; }
+
+a {
+  text-decoration: none;
+  transition: all .2s ease-in-out; }
+
+a:hover {
+  transform: scale(1.2);
+  text-shadow: 0 0 5px; }
+
+.label span {
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  padding: 15px;
+  font-size: 24px;
+  transition: all .3s ease-in-out; }
+  .label span#playerX {
+    background-position: 0 0;
+    background-image: linear-gradient(to right, transparent 50%, #ccc 50%); }
+    .label span#playerX.active {
+      background-position: 100% 0; }
+  .label span#playerO {
+    background-position: right bottom;
+    background-image: linear-gradient(to left, transparent 50%, #ccc 50%); }
+    .label span#playerO.active {
+      background-position: left bottom; }
+  .label span.active {
+    color: #333;
+    animation: shPulse 2s ease-in-out infinite; }
+
+@keyframes shPulse {
+  50% {
+    text-shadow: 0 0 15px #333; } }
+@keyframes slideUp {
+  0% {
+    background-position: 0 0; } }
+app {
+  background-color: 0;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 16px #ccc;
+  display: block;
+  width: 400px;
+  height: 400px; }
+
+/* Choice scene */
+.choice {
+  height: 100%; }
+
+.choice > div > * {
+  align-self: center;
+  text-align: center;
+  font-size: 24px;
+  width: 33%; }
+
+#or {
+  width: 100%; }
+
+.left, .right {
+  position: absolute;
+  z-index: 5; }
+
+.right {
+  right: 0; }
+
+.left {
+  left: 0; }
+
+#signX, #signO {
+  line-height: 36px;
+  font-size: 36px; }
+
+a.pulse {
+  width: 100%;
+  font-size: 72px;
+  transition: all 1s ease-in-out;
+  animation: pulse 2s ease-in-out infinite; }
+
+.pulse:hover {
+  transform: initial; }
+
+@keyframes pulse {
+  50% {
+    font-size: 136px;
+    text-shadow: 0 0 15px; } }
+/* Dev only */
+.choice {
+  display: none; }
+
+/*# sourceMappingURL=style.css.map */
