@@ -53,9 +53,9 @@ var game = {
       if (this.getCol(c).join("") === "XXX") console.log(`Match in ${c+1}. col`);
     }
     
-    // Angles    
-    if (f[0] !=='-' && f[0] == f[4] && f[4] == f[8]) console.log("Match in TL to BR");
-    if (f[2] !=='-' && f[2] == f[4] && f[4] == f[6]) console.log("Match in TR to BL");
+    // Diagonals    
+    if (f[0] !=='-' && f[0] == f[4] && f[4] == f[8]) console.log("Match in TL to BR \\");
+    if (f[2] !=='-' && f[2] == f[4] && f[4] == f[6]) console.log("Match in TR to BL \/");
   }
 }
 
@@ -145,6 +145,51 @@ var comp = function(){
                   0, 2,
                   6, 8
                 ];
+  
+  var top = ((sign = 'X') => {
+    let srt = (function () {
+      let arr = {
+        r: [], // Rows
+        c: [], // Cols
+        d: [], // Diags
+      };
+      
+      let d1 = (() => {
+        let dia = [];
+        for (let a = 0; a < dimension; a++) {
+          dia.push(f[3*a+a]);
+        }
+        return dia;
+      })();
+      
+      let d2 = (() => {
+        let dia = [];
+        for (let a = 0; a < dimension; a++) {
+          dia.push(f[2*(a+1)]);
+        }
+        return dia;
+      })();
+      
+      arr.d = [d1, d2];
+      
+      for (let i = 0; i < dimension; i++) {
+        arr.r.push(game.getRow(i));
+        arr.c.push(game.getCol(i));
+      }
+      
+      return arr;
+    })();
+    
+    Object.keys(srt).map((e) => {
+      srt[e].sort((a,b) => {
+        return b.filter((e) => e==sign).length -
+               a.filter((e) => e==sign).length;
+      })
+      srt[e] = srt[e].map(e => e.join(''));
+    });
+    
+    console.log(srt);
+  })();
   
   console.log('Start comp');
   // See table
