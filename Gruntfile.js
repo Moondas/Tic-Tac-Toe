@@ -35,6 +35,7 @@ module.exports = function(grunt) {
     browserSync: {
       dist: {
         options: {
+          open: false,
           notify: false,
           watchTask: true,
           server: './',

@@ -11,6 +11,7 @@ var game = {
     this.setTurn((this.getTurn() == 'X')? 'O':'X');
     $(".label span").toggleClass('active');
     this.turn++;
+    this.printStat();
   },
   fDim: 3,
   field: new Array(9).fill('-'),
@@ -25,7 +26,18 @@ var game = {
     });
   },
   addSign: function(c, r){
-    this.field[r*this.fDim+c] = this.player;
+    let f = this.field;
+    let fDim = this.fDim;
+    
+    if (f[r*fDim+c] === '-') {
+      f[r*fDim+c] = this.player;
+      return true;
+    } else return false;
+  },
+  printStat: function(){
+    for (let r = 0; r < this.fDim; r++) {
+      console.log(...this.getRow(r));
+    }
   },
   checkWin: function(){
     var f = this.field;
@@ -221,9 +233,13 @@ var makeGrid = function() {
   g.make();
   
   g.can.on('click', function(evt){
-    var player = game.player.toUpperCase();
-    if (player == 'X') placeSign(evt, player);
-    setTimeout(comp, 300); // Wait 300 msec
+    var player = () => game.player.toUpperCase();
+    
+    if (player() == 'X') placeSign(evt, player());
+    
+    if (player() == 'O') setTimeout(comp, 300); // Wait 300 msec for implement sleep(300) function, because comp too fast answer and turn chance don't shown
+    
+    // Check winner
     game.checkWin();
   });
 }
@@ -233,19 +249,17 @@ var placeSign = function(evt, player) { // For player
   var x = evt.offsetX;
   var y = evt.offsetY;
   
-  g.setLine('round', 3);
-  
-  game.addSign(...g.sign.getPos(x,y));
-  
-  for (var i = 0; i < game.field.length; i+=3) {
-    console.log(game.field[i], game.field[i+1], game.field[i+2]);
+  // @TODO Check busy cell, before replace with other sign
+  if (game.addSign(...g.sign.getPos(x,y))) {
+    
+    /* Draw Sign */
+    ctx.beginPath();
+    g.setLine('round', 3);
+    g.sign[player](...g.sign.getPos(x, y));
+    ctx.stroke();
+    
+    game.nextTurn();
   }
-  
-  /* Draw Sign */
-  ctx.beginPath();
-  g.sign[player](...g.sign.getPos(x, y));
-  ctx.stroke();
-  game.nextTurn();
 }
 
 $("#signX, #signO").on('click', function(evt){
