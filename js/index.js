@@ -1,45 +1,72 @@
+/*global $*/
+
 var player = {
-  sign: null,
-}
+  sign: null
+};
 
 var game = {
   turn: 0,
   player: "X",
-  setTurn: function(tn) {this.player = tn},
-  getTurn: function() {return this.player},
-  nextTurn: function(){
-    this.setTurn((this.getTurn() == 'X')? 'O':'X');
+  setTurn: function (tn) {this.player = tn; },
+  getTurn: function () {return this.player; },
+  nextTurn: function () {
+    this.setTurn((this.getTurn() === 'X') ? 'O' : 'X');
     $(".label span").toggleClass('active');
     this.turn++;
     this.printStat();
   },
   fDim: 3,
   field: new Array(9).fill('-'),
-  getRow: function(r){
+  getRow: function (r) {
     var fDim = this.fDim;
-    return this.field.slice(r*fDim, r*fDim+fDim)
+    return this.field.slice(r * fDim, r * fDim + fDim);
   },
-  getCol: function(c){
+  getCol: function (c) {
     var fDim = this.fDim;
-    return this.field.filter(function(e,i){
+    return this.field.filter(function (e, i) {
       return i % fDim === c;
     });
   },
-  addSign: function(c, r){
+  getDiag: function (d) {
+    let fDim = this.fDim;
+    let f =    this.field;
+    let diag = [];
+
+    switch (d) {
+      case 1: { // Top left to bottom right
+        for (let a = 0; a < fDim; a++) {
+          diag.push(f[fDim * a + a]);
+        }
+        break;
+      }
+      case 2: { // Top right to bottom left
+        for (let a = 0; a < fDim; a++) {
+          diag.push(f[(fDim - 1) * (a + 1)]);
+        }
+        break;
+      }
+      default: {
+        console.log('No more diagonals!');
+      }
+    }
+
+    return diag;
+  },
+  addSign: function (c, r) {
     let f = this.field;
     let fDim = this.fDim;
     
-    if (f[r*fDim+c] === '-') {
-      f[r*fDim+c] = this.player;
+    if (f[r * fDim + c] === '-') {
+      f[r * fDim + c] = this.player;
       return true;
     } else return false;
   },
-  printStat: function(){
+  printStat: function () {
     for (let r = 0; r < this.fDim; r++) {
       console.log(...this.getRow(r));
     }
   },
-  checkWin: function(){
+  checkWin: function () {
     var f = this.field;
     var fDim = this.fDim;
     
@@ -53,13 +80,13 @@ var game = {
       if (this.getCol(c).join("") === "XXX") console.log(`Match in ${c+1}. col`);
     }
     
-    // Diagonals    
-    if (f[0] !=='-' && f[0] == f[4] && f[4] == f[8]) console.log("Match in TL to BR \\");
-    if (f[2] !=='-' && f[2] == f[4] && f[4] == f[6]) console.log("Match in TR to BL \/");
+    // Diagonals
+    if (this.getDiag(1) === "XXX") console.log("Match in TL to BR \\");
+    if (this.getDiag(2) === "XXX") console.log("Match in TR to BL \/");
   }
 }
 
-var grid = function(cw, ch, dim, marg) {
+var grid = function (cw, ch, dim, marg) {
   var canvas = '<canvas id="can" width="' + cw + '" height="' + ch + '"></canvas>';
   $('app').append(canvas);
   
@@ -134,7 +161,7 @@ var grid = function(cw, ch, dim, marg) {
   })()
 };
 
-var comp = function(){
+var comp = function () {
   var f = game.field;
   var c, r;
   var center = 4;
@@ -147,30 +174,17 @@ var comp = function(){
                 ];
   
   var top = ((sign = 'X') => {
-    let srt = (function () {
+    let srt = (() => {
       let arr = {
         r: [], // Rows
         c: [], // Cols
         d: [], // Diags
       };
       
-      let d1 = (() => {
-        let dia = [];
-        for (let a = 0; a < dimension; a++) {
-          dia.push(f[3*a+a]);
-        }
-        return dia;
-      })();
+      let d1 = game.getDiag(1);
+      let d2 = game.getDiag(2);
       
-      let d2 = (() => {
-        let dia = [];
-        for (let a = 0; a < dimension; a++) {
-          dia.push(f[2*(a+1)]);
-        }
-        return dia;
-      })();
-      
-      arr.d = [d1, d2];
+      arr.d.push(d1, d2);
       
       for (let i = 0; i < dimension; i++) {
         arr.r.push(game.getRow(i));
@@ -200,17 +214,15 @@ var comp = function(){
   if (!stepped && f[center] == '-') {
     console.log('Check: center');
     c = center%dimension;
-    r = parseInt(center/dimension);
+    r = parseInt(center / dimension);
     stepped = true;
   }
   // Second: corner
   if (!stepped && f[center] !== '-') {
     console.log('Check: corner');
-    
-    // @TODO: Check used corners
-    
+
     // If all corners are empty, choose one at will
-    var whichCorner = (function(){
+    var whichCorner = (() => {
       var rand = -1;
       var used = f.filter(function(e,i,a){
         return corners.indexOf(i) > -1 && a[i] !== '-';
@@ -265,19 +277,19 @@ var comp = function(){
     var ctx = g.ctx;
 
     ctx.beginPath();
-    g.sign.O(c,r);
+    g.sign.O(c, r);
     ctx.stroke();
 
     game.nextTurn();
   }
 }
 
-var makeGrid = function() {
+var makeGrid = function () {
   g = grid(400, 400);
   
   g.make();
   
-  g.can.on('click', function(evt){
+  g.can.on('click', function (evt) {
     var player = () => game.player.toUpperCase();
     
     if (player() == 'X') placeSign(evt, player());
@@ -289,12 +301,11 @@ var makeGrid = function() {
   });
 }
 
-var placeSign = function(evt, player) { // For player
+var placeSign = function (evt, player) { // For player
   var ctx = g.ctx;
   var x = evt.offsetX;
   var y = evt.offsetY;
-  
-  // @TODO Check busy cell, before replace with other sign
+
   if (game.addSign(...g.sign.getPos(x,y))) {
     
     /* Draw Sign */
@@ -307,15 +318,15 @@ var placeSign = function(evt, player) { // For player
   }
 }
 
-$("#signX, #signO").on('click', function(evt){
+$("#signX, #signO").on('click', function (evt) {
   var choosed = evt.target.id;
   player.sign = choosed.slice(-1); // Gets sign from ID (last char)
   $orig = $(this); // Choosed one
   $origS = $orig.siblings(); // Other elements
   $choice = $(".choice"); // Layout for Choice
   
-  $origS.fadeOut().promise().done(function(){
-    $orig.addClass('pulse').delay(1000).queue('fx', function(){
+  $origS.fadeOut().promise().done(function () {
+    $orig.addClass('pulse').delay(1000).queue('fx', function () {
       $choice.fadeOut('slow');
     });
   });
