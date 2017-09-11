@@ -161,6 +161,7 @@ var grid = function (cw, ch, dim, marg) {
   })()
 };
 
+// Computer AI
 var comp = function () {
   var f = game.field;
   var c, r;
@@ -173,36 +174,41 @@ var comp = function () {
                   6, 8
                 ];
   
-  var top = ((sign = 'X') => {
+  // Sort directions by usage
+  var top = (() => {
     let srt = (() => {
-      let arr = {
-        r: [], // Rows
-        c: [], // Cols
-        d: [], // Diags
-      };
-      
-      let d1 = game.getDiag(1);
-      let d2 = game.getDiag(2);
-      
-      arr.d.push(d1, d2);
+      let list = [
+        //r#: [], // Rows
+        //c#: [], // Cols
+        //d#: [], // Diags
+      ];
       
       for (let i = 0; i < dimension; i++) {
-        arr.r.push(game.getRow(i));
-        arr.c.push(game.getCol(i));
+        list.push({['r' + i]: game.getRow(i)});
+        list.push({['c' + i]: game.getCol(i)});
+        if (i > 0) list.push({['d' + i]: game.getDiag(i)});
       }
       
-      return arr;
+      return list;
     })();
     
-    Object.keys(srt).map((e) => {
-      srt[e].sort((a,b) => {
-        return b.filter((e) => e==sign).length -
-               a.filter((e) => e==sign).length;
-      })
-      srt[e] = srt[e].map(e => e.join(''));
+    let getKey = (n) => Object.keys(n)[0];
+    
+    let ftr = (e) => e !== '-';
+    
+    srt.sort((a, b) => {
+      return b[getKey(b)].filter(ftr).length -
+             a[getKey(a)].filter(ftr).length;
     });
     
-    console.log(srt);
+    // Only for console view
+    let view = {};
+    
+    srt.map((e) => {
+      view[getKey(e)] = e[getKey(e)].join('');
+    });
+    
+    console.log(view);
   })();
   
   console.log('Start comp');
