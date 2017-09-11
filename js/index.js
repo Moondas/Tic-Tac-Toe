@@ -7,10 +7,11 @@ var player = {
 var game = {
   turn: 0,
   player: "X",
-  setTurn: function (tn) {this.player = tn; },
-  getTurn: function () {return this.player; },
+  getTurn: function () {return this.turn; },
+  setPlayer: function (tn) {this.player = tn; },
+  getPlayer: function () {return this.player; },
   nextTurn: function () {
-    this.setTurn((this.getTurn() === 'X') ? 'O' : 'X');
+    this.setPlayer((this.getPlayer() === 'X') ? 'O' : 'X');
     $(".label span").toggleClass('active');
     this.turn++;
     this.printStat();
@@ -67,22 +68,28 @@ var game = {
     }
   },
   checkWin: function () {
-    var f = this.field;
-    var fDim = this.fDim;
+    let f = this.field;
+    let fDim = this.fDim;
+    let msg = "";
+    let win = ["XXX", "OOO"];
     
     // Check in row match
     for(var r=0; r < fDim; r++) {
-      if (this.getRow(r).join("") === "XXX") console.log(`Match in ${r+1}. row`);
+      if (win.indexOf(this.getRow(r).join("")) > -1) msg = `Match in ${r+1}. row`;
     }
     
     // Check in col match
     for (var c=0; c < 3; c++) {
-      if (this.getCol(c).join("") === "XXX") console.log(`Match in ${c+1}. col`);
+      if (win.indexOf(this.getCol(c).join("")) > -1) msg = `Match in ${c+1}. col`;
     }
     
     // Diagonals
-    if (this.getDiag(1) === "XXX") console.log("Match in TL to BR \\");
-    if (this.getDiag(2) === "XXX") console.log("Match in TR to BL \/");
+    if (win.indexOf(this.getDiag(1).join("")) > -1) msg = "Match in TL to BR \\";
+    if (win.indexOf(this.getDiag(2).join("")) > -1) msg = "Match in TR to BL \/";
+    
+    if (msg) msg = "You win: \n" + msg;
+    
+    console.log(msg);
   }
 }
 
@@ -164,7 +171,7 @@ var grid = function (cw, ch, dim, marg) {
 // Computer AI
 var comp = function () {
   var f = game.field;
-  var c, r;
+  var c = undefined, r = undefined;
   var center = 4;
   var dimension = 3;
   var stepped = false;
@@ -196,6 +203,7 @@ var comp = function () {
     
     let ftr = (e) => e !== '-';
     
+    // Longest first
     srt.sort((a, b) => {
       return b[getKey(b)].filter(ftr).length -
              a[getKey(a)].filter(ftr).length;
@@ -208,7 +216,28 @@ var comp = function () {
       view[getKey(e)] = e[getKey(e)].join('');
     });
     
-    console.log(view);
+    //console.log(view);
+    
+    return srt;
+  })();
+  
+  // TODO 2O & 2X decision: make halfling test O & X sides
+  var potentials = (() => {
+    let cache = {};
+    let ftr = (e) => e !== '-';
+    let getKey = (n) => Object.keys(n)[0];
+    
+    var halfling = {
+      O: {},
+      X: {}
+    };
+    
+    // We don't deal with longer than 2, because it's not in game
+    cache = top.filter(e => e[getKey(e)].filter(ftr).length < 3);
+    
+    console.log(cache);
+    
+    return cache;
   })();
   
   console.log('Start comp');
@@ -216,10 +245,50 @@ var comp = function () {
   // Decision: defense xor offense
   // @TODO Check Matches & Possibilities
   
+  if (game.getTurn() > 1 && typeof potentials[0] !== 'undefined') {
+    var first = potentials[0];
+    
+    let ftr = (e) => e !== '-';
+    let getKey = (n) => Object.keys(n)[0];
+    
+    let index = getKey(first);
+    let arr = first[index];
+    let dir = index.split('')[0];
+    
+    switch (dir) {
+      case 'r': {
+        r = Number(index.split('')[1]);
+        c = Number(arr.indexOf('-'));
+        break;
+      }
+      case 'c': {
+        c = Number(index.split('')[1]);
+        r = Number(arr.indexOf('-'));
+        break;
+      }
+      case 'd': {
+        r = arr.indexOf('-')
+        
+        if (index == 'd1') {
+          c = r;
+        }
+        if (index == 'd2') {
+          c = dimension-1-r;
+        }
+        break;
+      }
+      default: `Houston, I have a problem`;
+    }
+        
+    console.log(arr, index, c, r);
+    
+    if (c !== undefined && r !== undefined) stepped = true;
+  }
+  
   // First: center
   if (!stepped && f[center] == '-') {
     console.log('Check: center');
-    c = center%dimension;
+    c = center % dimension;
     r = parseInt(center / dimension);
     stepped = true;
   }
