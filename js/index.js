@@ -15,15 +15,19 @@ var game = {
     $(".label span").toggleClass('active');
     this.turn++;
     this.printStat();
+    if (this.turn === 9) console.log('No more moves left!')
+    
+    // Check winner
+    this.checkWin();
   },
   fDim: 3,
   field: new Array(9).fill('-'),
   getRow: function (r) {
-    var fDim = this.fDim;
+    let fDim = this.fDim;
     return this.field.slice(r * fDim, r * fDim + fDim);
   },
   getCol: function (c) {
-    var fDim = this.fDim;
+    let fDim = this.fDim;
     return this.field.filter(function (e, i) {
       return i % fDim === c;
     });
@@ -56,11 +60,15 @@ var game = {
   addSign: function (c, r) {
     let f = this.field;
     let fDim = this.fDim;
+    let player = this.player;
+    let id = r * fDim + c;
     
-    if (f[r * fDim + c] === '-') {
-      f[r * fDim + c] = this.player;
+    if (f[id] === '-') {
+      f[id] = player;
+      g.sign[player](c, r);
       return true;
-    } else return false;
+    }
+    return false;
   },
   printStat: function () {
     for (let r = 0; r < this.fDim; r++) {
@@ -87,9 +95,10 @@ var game = {
     if (win.indexOf(this.getDiag(1).join("")) > -1) msg = "Match in TL to BR \\";
     if (win.indexOf(this.getDiag(2).join("")) > -1) msg = "Match in TR to BL \/";
     
-    if (msg) msg = "You win: \n" + msg;
-    
-    console.log(msg);
+    if (msg) {
+      msg = "Winner combination: \n" + msg;
+      console.log(msg);
+    }
   }
 }
 
@@ -123,11 +132,13 @@ var grid = function (cw, ch, dim, marg) {
           offsetX = g.tile.W * (c || 0),
           offsetY = g.tile.H * (r || 0);
       
+      ctx.beginPath();
       ctx.moveTo(offsetX + g.tile.W/div, offsetY + g.tile.H/div);
       ctx.lineTo(offsetX + g.tile.W*2/div, offsetY + g.tile.H*2/div);
 
       ctx.moveTo(offsetX + g.tile.W*2/div, offsetY + g.tile.H/div);
       ctx.lineTo(offsetX + g.tile.W/div, offsetY + g.tile.H*2/div);
+      ctx.stroke();
     },
     this.sign.O = function(c, r){
       var ctx = g.ctx,
@@ -135,7 +146,9 @@ var grid = function (cw, ch, dim, marg) {
           offsetX = g.tile.W * (c || 0),
           offsetY = g.tile.H * (r || 0);
       
+      ctx.beginPath();
       ctx.arc(offsetX + g.tile.W/2, offsetY + g.tile.H/2, g.tile.H/div/2, 0, Math.PI*2);
+      ctx.stroke();
     },
     this.sign.getPos = function(x, y) {
       var c = parseInt(x/g.cw*3);
@@ -190,10 +203,12 @@ var comp = function () {
         //d#: [], // Diags
       ];
       
+      let item = (i, v) => Object({id: i, val: v,});
+      
       for (let i = 0; i < dimension; i++) {
-        list.push({['r' + i]: game.getRow(i)});
-        list.push({['c' + i]: game.getCol(i)});
-        if (i > 0) list.push({['d' + i]: game.getDiag(i)});
+        list.push(item('r' + i, game.getRow(i)));
+        list.push(item('c' + i, game.getCol(i)));
+        if (i > 0) list.push(item('d' + i, game.getDiag(i)));
       }
       
       return list;
@@ -205,15 +220,15 @@ var comp = function () {
     
     // Longest first
     srt.sort((a, b) => {
-      return b[getKey(b)].filter(ftr).length -
-             a[getKey(a)].filter(ftr).length;
+      return b.val.filter(ftr).length -
+             a.val.filter(ftr).length;
     });
     
     // Only for console view
     let view = {};
     
     srt.map((e) => {
-      view[getKey(e)] = e[getKey(e)].join('');
+      view[e.id] = e.val.join('');
     });
     
     //console.log(view);
@@ -225,62 +240,69 @@ var comp = function () {
   var potentials = (() => {
     let cache = {};
     let ftr = (e) => e !== '-';
-    let getKey = (n) => Object.keys(n)[0];
-    
-    var halfling = {
-      O: {},
-      X: {}
-    };
     
     // We don't deal with longer than 2, because it's not in game
-    cache = top.filter(e => e[getKey(e)].filter(ftr).length < 3);
+    cache = top.filter(e => e.val.filter(ftr).length < 3);
     
+    // Filter mixed directions
+    cache = cache.filter(e => !(e.val.indexOf('X') > -1 && e.val.indexOf('O') > -1));
+    
+    // Opposite views
+    var halfling = {
+      O: (() => cache.filter(e => e.val.indexOf('O') > -1))(),
+      X: (() => cache.filter(e => e.val.indexOf('X') > -1))(),
+    };
+    
+    console.log("Halflings are: ", "O:", halfling.O[0], "X:", halfling.X[0]);
     console.log(cache);
     
-    return cache;
+    return halfling;
   })();
   
   console.log('Start comp');
-  // See table
-  // Decision: defense xor offense
-  // @TODO Check Matches & Possibilities
   
-  if (game.getTurn() > 1 && typeof potentials[0] !== 'undefined') {
-    var first = potentials[0];
+  // Real decisions begins here
+  if (game.getTurn() > 1 && game.turn < 9) {
+    let halflings = potentials;
     
-    let ftr = (e) => e !== '-';
-    let getKey = (n) => Object.keys(n)[0];
+    let first = halflings.O[0]; // In all possibilities select O, except '2X' has it
     
-    let index = getKey(first);
-    let arr = first[index];
-    let dir = index.split('')[0];
+    if (halflings.X[0] !== undefined && halflings.O[0] !== undefined) 
+      if (halflings.X[0].val.filter(e => e === 'X').length === 2 && !(halflings.O[0].val.filter(e => e === 'O').length === 2) ) first = halflings.X[0];
     
-    switch (dir) {
-      case 'r': {
-        r = Number(index.split('')[1]);
-        c = Number(arr.indexOf('-'));
-        break;
-      }
-      case 'c': {
-        c = Number(index.split('')[1]);
-        r = Number(arr.indexOf('-'));
-        break;
-      }
-      case 'd': {
-        r = arr.indexOf('-')
-        
-        if (index == 'd1') {
-          c = r;
+    if (first !== undefined) {
+      let index = first.id;
+      let arr = first.val;
+
+      let dir = index.split('')[0];
+
+      switch (dir) {
+        case 'r': {
+          r = Number(index.split('')[1]);
+          c = Number(arr.indexOf('-'));
+          break;
         }
-        if (index == 'd2') {
-          c = dimension-1-r;
+        case 'c': {
+          c = Number(index.split('')[1]);
+          r = Number(arr.indexOf('-'));
+          break;
         }
-        break;
+        case 'd': {
+          r = arr.indexOf('-')
+
+          if (index == 'd1') {
+            c = r;
+          }
+          if (index == 'd2') {
+            c = dimension-1-r;
+          }
+          break;
+        }
+        default: `Houston, I have a problem`;
       }
-      default: `Houston, I have a problem`;
+
+      console.log(arr, index, c, r);
     }
-        
-    console.log(arr, index, c, r);
     
     if (c !== undefined && r !== undefined) stepped = true;
   }
@@ -339,23 +361,11 @@ var comp = function () {
     
     if (whichCorner > -1) stepped = true;
   }
-  
-  // Make match
-  // Check enemy, check possibilities
-  
+    
   if (stepped) { 
-    game.addSign(c, r);
-
     console.log("Position: ", c, "/", r);
-
-    /* Draw Sign */
-    var ctx = g.ctx;
-
-    ctx.beginPath();
-    g.sign.O(c, r);
-    ctx.stroke();
-
-    game.nextTurn();
+    
+    if (game.addSign(c, r)) game.nextTurn();
   }
 }
 
@@ -370,27 +380,14 @@ var makeGrid = function () {
     if (player() == 'X') placeSign(evt, player());
     
     if (player() == 'O') setTimeout(comp, 300); // Wait 300 msec for implement sleep(300) function, because comp too fast answer and turn chance don't shown
-    
-    // Check winner
-    game.checkWin();
   });
 }
 
 var placeSign = function (evt, player) { // For player
-  var ctx = g.ctx;
   var x = evt.offsetX;
   var y = evt.offsetY;
 
-  if (game.addSign(...g.sign.getPos(x,y))) {
-    
-    /* Draw Sign */
-    ctx.beginPath();
-    g.setLine('round', 3);
-    g.sign[player](...g.sign.getPos(x, y));
-    ctx.stroke();
-    
-    game.nextTurn();
-  }
+  if (game.addSign(...g.sign.getPos(x, y))) game.nextTurn();
 }
 
 $("#signX, #signO").on('click', function (evt) {
