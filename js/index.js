@@ -1,17 +1,17 @@
 /*global $*/
 
 var player = {
-  sign: null
+  sign: "X"
 };
 
 var game = {
   turn: 0,
   player: "X",
   getTurn: function () {return this.turn; },
-  setPlayer: function (tn) {this.player = tn; },
   getPlayer: function () {return this.player; },
+  togglePlayer: function () {this.player = (this.player === 'X') ? 'O' : 'X'; },
   nextTurn: function () {
-    this.setPlayer((this.getPlayer() === 'X') ? 'O' : 'X');
+    this.togglePlayer();
     $(".label span").toggleClass('active');
     this.turn++;
     this.printStat();
@@ -75,28 +75,48 @@ var game = {
       console.log(...this.getRow(r));
     }
   },
+  reset: function () {
+    this.field = new Array(9).fill('-');
+    
+    g.clear();
+    g.make();
+  },
   checkWin: function () {
     let f = this.field;
     let fDim = this.fDim;
     let msg = "";
-    let win = ["XXX", "OOO"];
+    let win = ["XXX", "OOO"]; // TODO Get winner's sign
+    let dir = "";
     
     // Check in row match
     for(var r=0; r < fDim; r++) {
-      if (win.indexOf(this.getRow(r).join("")) > -1) msg = `Match in ${r+1}. row`;
+      if (win.indexOf(this.getRow(r).join("")) > -1) {
+        msg = `Match in ${r+1}. row`;
+        dir = `r${r}`;
+      }
     }
     
     // Check in col match
     for (var c=0; c < 3; c++) {
-      if (win.indexOf(this.getCol(c).join("")) > -1) msg = `Match in ${c+1}. col`;
+      if (win.indexOf(this.getCol(c).join("")) > -1) {
+        msg = `Match in ${c+1}. col`;
+        dir = `c${c}`;
+      }
     }
     
     // Diagonals
-    if (win.indexOf(this.getDiag(1).join("")) > -1) msg = "Match in TL to BR \\";
-    if (win.indexOf(this.getDiag(2).join("")) > -1) msg = "Match in TR to BL \/";
+    if (win.indexOf(this.getDiag(1).join("")) > -1) {
+      msg = "Match in TL to BR \\";
+      dir = `d1`;
+    }
+    if (win.indexOf(this.getDiag(2).join("")) > -1) {
+      msg = "Match in TR to BL \/";
+      dir = `d2`;
+    }
     
     if (msg) {
       msg = "Winner combination: \n" + msg;
+      g.cross(dir);
       console.log(msg);
     }
   }
@@ -158,8 +178,47 @@ var grid = function (cw, ch, dim, marg) {
       
     this.m = marg || 15; // Margin
     
-    this.clear = function(){this.ctx.clearRect(0, 0, this.ch, this.cw)};
-    this.make = function(){
+    this.cross = function (id = "") {
+      var g = this,
+          ctx = g.ctx;
+      let dir = id.split('')[0];
+      let step = id.split('')[1];
+      
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = "yellowgreen";
+      
+      switch (dir) {
+        case 'r': {
+          ctx.moveTo(0 + this.m, step * g.tile.H + g.tile.H/2);
+          ctx.lineTo(cw - this.m, step * g.tile.H + g.tile.H/2);
+          break;
+        }
+        case 'c': {
+          ctx.moveTo(step * g.tile.W + g.tile.W/2, 0 + this.m);
+          ctx.lineTo(step * g.tile.W + g.tile.W/2, ch - this.m);
+          break;
+        }
+        case 'd': {
+          if (id == 'd1') {
+            ctx.moveTo(0 + this.m, 0 + this.m);
+            ctx.lineTo(cw - this.m, ch - this.m);
+          }
+          if (id == 'd2') {
+            ctx.moveTo(cw - this.m, 0 + this.m);
+            ctx.lineTo(0 + this.m, ch - this.m);
+          }
+          break;
+        }
+        default: `Houston, I have a problem`;
+      }
+      
+      ctx.stroke();
+      ctx.restore();
+    };
+    
+    this.clear = function () {this.ctx.clearRect(0, 0, this.ch, this.cw); };
+    this.make = function () {
       var g = this,
           ctx = g.ctx;
       
@@ -176,7 +235,8 @@ var grid = function (cw, ch, dim, marg) {
         ctx.moveTo(g.m, g.tile.H*i);
         ctx.lineTo(g.cw-g.m, g.tile.H*i);
       }
-      ctx.stroke();      
+      ctx.stroke();
+      this.cross();
     }
   })()
 };
@@ -236,7 +296,6 @@ var comp = function () {
     return srt;
   })();
   
-  // TODO 2O & 2X decision: make halfling test O & X sides
   var potentials = (() => {
     let cache = {};
     let ftr = (e) => e !== '-';
@@ -254,7 +313,6 @@ var comp = function () {
     };
     
     console.log("Halflings are: ", "O:", halfling.O[0], "X:", halfling.X[0]);
-    console.log(cache);
     
     return halfling;
   })();
@@ -265,10 +323,18 @@ var comp = function () {
   if (game.getTurn() > 1 && game.turn < 9) {
     let halflings = potentials;
     
-    let first = halflings.O[0]; // In all possibilities select O, except '2X' has it
+    let cpuSign = (player.sign === "O") ? 'X' : 'O';
+    let userSign = player.sign;
+    let cpu =  halflings[cpuSign][0];
+    let user = halflings[userSign][0];
     
-    if (halflings.X[0] !== undefined && halflings.O[0] !== undefined) 
-      if (halflings.X[0].val.filter(e => e === 'X').length === 2 && !(halflings.O[0].val.filter(e => e === 'O').length === 2) ) first = halflings.X[0];
+    let first = cpu; // In all possibilities select O, except '2X' has it or inversely
+    
+    if (user !== undefined && cpu !== undefined) 
+      if (user.val.filter(e => e === userSign).length === 2 &&
+        !(cpu.val.filter(e => e === cpuSign).length === 2) ) first = user;
+    
+    if (user !== undefined && cpu === undefined) first = user;
     
     if (first !== undefined) {
       let index = first.id;
@@ -318,7 +384,7 @@ var comp = function () {
   if (!stepped && f[center] !== '-') {
     console.log('Check: corner');
 
-    // If all corners are empty, choose one at will
+    // Choose one at will
     var whichCorner = (() => {
       var rand = -1;
       var used = f.filter(function(e,i,a){
@@ -327,7 +393,6 @@ var comp = function () {
       
       while(f[corners[rand]] !== '-' && used < 4) {
         rand = Math.floor(Math.random()*4);
-        //debugger;
       }
       console.log("Selected corner: ", rand);
       return rand;
@@ -374,12 +439,14 @@ var makeGrid = function () {
   
   g.make();
   
+  var sign = () => game.player.toUpperCase();
+  
+  if (sign() !== player.sign) comp();
+  
   g.can.on('click', function (evt) {
-    var player = () => game.player.toUpperCase();
+    if (sign() == player.sign) placeSign(evt, sign());
     
-    if (player() == 'X') placeSign(evt, player());
-    
-    if (player() == 'O') setTimeout(comp, 300); // Wait 300 msec for implement sleep(300) function, because comp too fast answer and turn chance don't shown
+    if (sign() !== player.sign) setTimeout(comp, 300); // Wait 300 msec for implement sleep(300) function, because comp too fast answer and turn chance don't shown
   });
 }
 
@@ -390,6 +457,9 @@ var placeSign = function (evt, player) { // For player
   if (game.addSign(...g.sign.getPos(x, y))) game.nextTurn();
 }
 
+// TODO Choice layout wiring
+// TODO Make end game
+// FUTURE Score counting
 $("#signX, #signO").on('click', function (evt) {
   var choosed = evt.target.id;
   player.sign = choosed.slice(-1); // Gets sign from ID (last char)
