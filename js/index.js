@@ -1,5 +1,14 @@
 /*global $*/
 
+// Global settings is here
+var settings = {
+  debug: true,
+  color: {O: '#03A9F4',
+          X: '#FF9800',
+          cross: 'yellowgreen'},
+  grid: {margin: 15},
+};
+
 var player = {
   sign: "X"
 };
@@ -7,18 +16,28 @@ var player = {
 var game = {
   turn: 0,
   player: "X",
+  status: "run",
   getTurn: function () {return this.turn; },
   getPlayer: function () {return this.player; },
-  togglePlayer: function () {this.player = (this.player === 'X') ? 'O' : 'X'; },
-  nextTurn: function () {
-    this.togglePlayer();
+  togglePlayer: function () {
+    this.player = (this.player === 'X') ? 'O' : 'X';
     $(".label span").toggleClass('active');
-    this.turn++;
-    this.printStat();
-    if (this.turn === 9) console.log('No more moves left!')
+  },
+  nextTurn: function () {
+    if (settings.debug) this.printStat();
     
-    // Check winner
     this.checkWin();
+    
+    this.togglePlayer();
+    
+    if (this.turn === 8) {
+      console.log('No more moves left!');
+      this.end();
+    }
+    if (this.status == 'run') {
+      this.turn++;
+      console.log(`${this.turn+1}. turn begins.`);
+    }
   },
   fDim: 3,
   field: new Array(9).fill('-'),
@@ -76,20 +95,31 @@ var game = {
     }
   },
   reset: function () {
-    this.field = new Array(9).fill('-');
+    this.field.fill('-');
+    this.status = 'run';
+    this.turn = 0;
+    this.player = 'X'; // NOTE Always the X begins
     
     g.clear();
-    g.make();
+    makeGrid();
+  },
+  end: function () {
+    this.status = 'end';
+    console.log('The game has ended!');
+    
+    g.can.off('click').one('click', function () {
+      game.reset();
+    });
   },
   checkWin: function () {
     let f = this.field;
     let fDim = this.fDim;
     let msg = "";
-    let win = ["XXX", "OOO"]; // TODO Get winner's sign
+    let win = ["XXX", "OOO"];
     let dir = "";
     
     // Check in row match
-    for(var r=0; r < fDim; r++) {
+    for(var r = 0; r < fDim; r++) {
       if (win.indexOf(this.getRow(r).join("")) > -1) {
         msg = `Match in ${r+1}. row`;
         dir = `r${r}`;
@@ -97,7 +127,7 @@ var game = {
     }
     
     // Check in col match
-    for (var c=0; c < 3; c++) {
+    for (var c = 0; c < 3; c++) {
       if (win.indexOf(this.getCol(c).join("")) > -1) {
         msg = `Match in ${c+1}. col`;
         dir = `c${c}`;
@@ -115,7 +145,8 @@ var game = {
     }
     
     if (msg) {
-      msg = "Winner combination: \n" + msg;
+      game.end();
+      msg = `The winner is: ${game.player}\nWinner combination: \n` + msg;
       g.cross(dir);
       console.log(msg);
     }
@@ -124,11 +155,11 @@ var game = {
 
 var grid = function (cw, ch, dim, marg) {
   var canvas = '<canvas id="can" width="' + cw + '" height="' + ch + '"></canvas>';
-  $('app').append(canvas);
+  if ($('#can').get(0) === undefined) $('app').append(canvas);
   
   return new (function() {
     this.can = $('#can');
-    this.ctx = this.can[0].getContext('2d'),
+    this.ctx = this.can.get(0).getContext('2d'),
       
     this.ch = cw,
     this.cw = ch,
@@ -142,15 +173,18 @@ var grid = function (cw, ch, dim, marg) {
     }
       
     this.tile = {},
-    this.tile.W = cw/this.dimension,
-    this.tile.H = ch/this.dimension,
+    this.tile.W = cw / this.dimension,
+    this.tile.H = ch / this.dimension,
     
     this.sign = {},
     this.sign.X = function(c, r){ // Place sign X to Col & Row
       var ctx = g.ctx,
-          div = 3,
+          div = g.dimension,
           offsetX = g.tile.W * (c || 0),
           offsetY = g.tile.H * (r || 0);
+      
+      ctx.save();
+      ctx.strokeStyle = settings.color.X;
       
       ctx.beginPath();
       ctx.moveTo(offsetX + g.tile.W/div, offsetY + g.tile.H/div);
@@ -159,16 +193,23 @@ var grid = function (cw, ch, dim, marg) {
       ctx.moveTo(offsetX + g.tile.W*2/div, offsetY + g.tile.H/div);
       ctx.lineTo(offsetX + g.tile.W/div, offsetY + g.tile.H*2/div);
       ctx.stroke();
+      
+      ctx.restore();
     },
     this.sign.O = function(c, r){
       var ctx = g.ctx,
-          div = 3,
+          div = g.dimension,
           offsetX = g.tile.W * (c || 0),
           offsetY = g.tile.H * (r || 0);
+      
+      ctx.save();
+      ctx.strokeStyle = settings.color.O;
       
       ctx.beginPath();
       ctx.arc(offsetX + g.tile.W/2, offsetY + g.tile.H/2, g.tile.H/div/2, 0, Math.PI*2);
       ctx.stroke();
+      
+      ctx.restore();
     },
     this.sign.getPos = function(x, y) {
       var c = parseInt(x/g.cw*3);
@@ -178,7 +219,7 @@ var grid = function (cw, ch, dim, marg) {
       
     this.m = marg || 15; // Margin
     
-    this.cross = function (id = "") {
+    this.cross = function (id) {
       var g = this,
           ctx = g.ctx;
       let dir = id.split('')[0];
@@ -186,7 +227,7 @@ var grid = function (cw, ch, dim, marg) {
       
       ctx.save();
       ctx.beginPath();
-      ctx.strokeStyle = "yellowgreen";
+      ctx.strokeStyle = settings.color.cross;
       
       switch (dir) {
         case 'r': {
@@ -236,7 +277,6 @@ var grid = function (cw, ch, dim, marg) {
         ctx.lineTo(g.cw-g.m, g.tile.H*i);
       }
       ctx.stroke();
-      this.cross();
     }
   })()
 };
@@ -246,7 +286,7 @@ var comp = function () {
   var f = game.field;
   var c = undefined, r = undefined;
   var center = 4;
-  var dimension = 3;
+  var dimension = g.dimension;
   var stepped = false;
   
   var corners = [
@@ -274,8 +314,6 @@ var comp = function () {
       return list;
     })();
     
-    let getKey = (n) => Object.keys(n)[0];
-    
     let ftr = (e) => e !== '-';
     
     // Longest first
@@ -291,7 +329,7 @@ var comp = function () {
       view[e.id] = e.val.join('');
     });
     
-    //console.log(view);
+    if (settings.debug) console.log('Main list view:', view);
     
     return srt;
   })();
@@ -312,7 +350,7 @@ var comp = function () {
       X: (() => cache.filter(e => e.val.indexOf('X') > -1))(),
     };
     
-    console.log("Halflings are: ", "O:", halfling.O[0], "X:", halfling.X[0]);
+    if (settings.debug) console.log("Halflings are: ", "O:", halfling.O[0], "X:", halfling.X[0]);
     
     return halfling;
   })();
@@ -341,16 +379,17 @@ var comp = function () {
       let arr = first.val;
 
       let dir = index.split('')[0];
+      let no = Number(index.split('')[1]);
 
       switch (dir) {
         case 'r': {
-          r = Number(index.split('')[1]);
-          c = Number(arr.indexOf('-'));
+          r = no;
+          c = arr.indexOf('-');
           break;
         }
         case 'c': {
-          c = Number(index.split('')[1]);
-          r = Number(arr.indexOf('-'));
+          r = arr.indexOf('-');
+          c = no;
           break;
         }
         case 'd': {
@@ -367,7 +406,7 @@ var comp = function () {
         default: `Houston, I have a problem`;
       }
 
-      console.log(arr, index, c, r);
+      if (settings.debug) console.log(arr, index, c, r);
     }
     
     if (c !== undefined && r !== undefined) stepped = true;
@@ -375,7 +414,7 @@ var comp = function () {
   
   // First: center
   if (!stepped && f[center] == '-') {
-    console.log('Check: center');
+    if (settings.debug) console.log('Check: center');
     c = center % dimension;
     r = parseInt(center / dimension);
     stepped = true;
@@ -387,19 +426,19 @@ var comp = function () {
     // Choose one at will
     var whichCorner = (() => {
       var rand = -1;
-      var used = f.filter(function(e,i,a){
+      var used = f.filter(function (e, i, a){
         return corners.indexOf(i) > -1 && a[i] !== '-';
       }).length;
       
       while(f[corners[rand]] !== '-' && used < 4) {
-        rand = Math.floor(Math.random()*4);
+        rand = Math.floor(Math.random() * 4);
       }
-      console.log("Selected corner: ", rand);
+      if (settings.debug) console.log("Selected corner: ", rand);
       return rand;
     })();
     
     switch(whichCorner) {
-      case -1: console.log('No more corners left!');
+      case -1: if (settings.debug) console.log('No more corners left!');
       break;
       case 0: {
         c = 0;
@@ -428,7 +467,7 @@ var comp = function () {
   }
     
   if (stepped) { 
-    console.log("Position: ", c, "/", r);
+    if (settings.debug) console.log("Position: ", c, "/", r);
     
     if (game.addSign(c, r)) game.nextTurn();
   }
@@ -446,7 +485,7 @@ var makeGrid = function () {
   g.can.on('click', function (evt) {
     if (sign() == player.sign) placeSign(evt, sign());
     
-    if (sign() !== player.sign) setTimeout(comp, 300); // Wait 300 msec for implement sleep(300) function, because comp too fast answer and turn chance don't shown
+    if (game.status == 'run' && sign() !== player.sign) setTimeout(comp, 300); // Wait 300 msec for implement sleep(300) function, because comp too fast answer and turn chance don't shown
   });
 }
 
@@ -457,8 +496,6 @@ var placeSign = function (evt, player) { // For player
   if (game.addSign(...g.sign.getPos(x, y))) game.nextTurn();
 }
 
-// TODO Choice layout wiring
-// TODO Make end game
 // FUTURE Score counting
 $("#signX, #signO").on('click', function (evt) {
   var choosed = evt.target.id;
@@ -469,9 +506,8 @@ $("#signX, #signO").on('click', function (evt) {
   
   $origS.fadeOut().promise().done(function () {
     $orig.addClass('pulse').delay(1000).queue('fx', function () {
-      $choice.fadeOut('slow');
+      $choice.fadeOut('slow').promise().done(makeGrid);
     });
   });
 })
 
-makeGrid();
