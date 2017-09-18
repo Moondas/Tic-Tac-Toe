@@ -98,7 +98,7 @@ var game = {
     this.field.fill('-');
     this.status = 'run';
     this.turn = 0;
-    this.player = 'X'; // NOTE Always the X begins
+    if (this.player === 'O') this.togglePlayer(); // NOTE Always the X begins
     
     g.clear();
     makeGrid();
