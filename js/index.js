@@ -3,25 +3,27 @@
 // Global settings is here
 var settings = {
   debug: true,
-  color: {O: '#03A9F4',
-          X: '#FF9800',
-          cross: 'yellowgreen'},
+  color: {
+    O: '#03A9F4',
+    X: '#FF9800',
+    cross: 'yellowgreen'
+  },
   grid: {margin: 15},
 };
 
 var player = {
-  sign: "X"
+  sign: 'X'
 };
 
 var game = {
   turn: 0,
-  player: "X",
-  status: "run",
+  player: 'X',
+  status: 'run',
   getTurn: function () {return this.turn; },
   getPlayer: function () {return this.player; },
   togglePlayer: function () {
     this.player = (this.player === 'X') ? 'O' : 'X';
-    $(".label span").toggleClass('active');
+    $('.label span').toggleClass('active');
   },
   nextTurn: function () {
     if (settings.debug) this.printStat();
@@ -36,7 +38,7 @@ var game = {
     }
     if (this.status == 'run') {
       this.turn++;
-      console.log(`${this.turn+1}. turn begins.`);
+      console.log(`${this.turn + 1}. turn begins.`);
     }
   },
   fDim: 3,
@@ -112,36 +114,35 @@ var game = {
     });
   },
   checkWin: function () {
-    let f = this.field;
     let fDim = this.fDim;
-    let msg = "";
-    let win = ["XXX", "OOO"];
-    let dir = "";
+    let msg = '';
+    let win = ['XXX', 'OOO'];
+    let dir = '';
     
     // Check in row match
-    for(var r = 0; r < fDim; r++) {
-      if (win.indexOf(this.getRow(r).join("")) > -1) {
-        msg = `Match in ${r+1}. row`;
+    for (var r = 0; r < fDim; r++) {
+      if (win.indexOf(this.getRow(r).join('')) > -1) {
+        msg = `Match in ${r + 1}. row`;
         dir = `r${r}`;
       }
     }
     
     // Check in col match
     for (var c = 0; c < 3; c++) {
-      if (win.indexOf(this.getCol(c).join("")) > -1) {
-        msg = `Match in ${c+1}. col`;
+      if (win.indexOf(this.getCol(c).join('')) > -1) {
+        msg = `Match in ${c + 1}. col`;
         dir = `c${c}`;
       }
     }
     
     // Diagonals
-    if (win.indexOf(this.getDiag(1).join("")) > -1) {
-      msg = "Match in TL to BR \\";
-      dir = `d1`;
+    if (win.indexOf(this.getDiag(1).join('')) > -1) {
+      msg = 'Match in TL to BR \\';
+      dir = 'd1';
     }
-    if (win.indexOf(this.getDiag(2).join("")) > -1) {
-      msg = "Match in TR to BL \/";
-      dir = `d2`;
+    if (win.indexOf(this.getDiag(2).join('')) > -1) {
+      msg = 'Match in TR to BL /';
+      dir = 'd2';
     }
     
     if (msg) {
@@ -151,7 +152,7 @@ var game = {
       console.log(msg);
     }
   }
-}
+};
 
 var grid = function (cw, ch, dim, marg) {
   var canvas = '<canvas id="can" width="' + cw + '" height="' + ch + '"></canvas>';
@@ -159,69 +160,69 @@ var grid = function (cw, ch, dim, marg) {
   
   return new (function() {
     this.can = $('#can');
-    this.ctx = this.can.get(0).getContext('2d'),
+    this.ctx = this.can.get(0).getContext('2d');
       
-    this.ch = cw,
-    this.cw = ch,
-    this.dimension = dim || 3, // Define row and column number in fixed 1:1 ratio
+    this.ch = cw;
+    this.cw = ch;
+    this.dimension = dim || 3; // Define row and column number in fixed 1:1 ratio
       
-    this.setLine = function(cap, width){
+    this.setLine = function(cap, width) {
       var ctx = this.ctx;
       
       ctx.lineCap = cap;
       ctx.lineWidth = width;
-    }
+    };
       
     this.tile = {},
     this.tile.W = cw / this.dimension,
     this.tile.H = ch / this.dimension,
     
     this.sign = {},
-    this.sign.X = function(c, r){ // Place sign X to Col & Row
+    this.sign.X = function(c, r) { // Place sign X to Col & Row
       var ctx = g.ctx,
-          div = g.dimension,
-          offsetX = g.tile.W * (c || 0),
-          offsetY = g.tile.H * (r || 0);
+        div = g.dimension,
+        offsetX = g.tile.W * (c || 0),
+        offsetY = g.tile.H * (r || 0);
       
       ctx.save();
       ctx.strokeStyle = settings.color.X;
       
       ctx.beginPath();
-      ctx.moveTo(offsetX + g.tile.W/div, offsetY + g.tile.H/div);
-      ctx.lineTo(offsetX + g.tile.W*2/div, offsetY + g.tile.H*2/div);
+      ctx.moveTo(offsetX + g.tile.W / div, offsetY + g.tile.H / div);
+      ctx.lineTo(offsetX + g.tile.W * 2 / div, offsetY + g.tile.H * 2 / div);
 
-      ctx.moveTo(offsetX + g.tile.W*2/div, offsetY + g.tile.H/div);
-      ctx.lineTo(offsetX + g.tile.W/div, offsetY + g.tile.H*2/div);
+      ctx.moveTo(offsetX + g.tile.W * 2 / div, offsetY + g.tile.H / div);
+      ctx.lineTo(offsetX + g.tile.W / div, offsetY + g.tile.H * 2 / div);
       ctx.stroke();
       
       ctx.restore();
     },
     this.sign.O = function(c, r){
       var ctx = g.ctx,
-          div = g.dimension,
-          offsetX = g.tile.W * (c || 0),
-          offsetY = g.tile.H * (r || 0);
+        div = g.dimension,
+        offsetX = g.tile.W * (c || 0),
+        offsetY = g.tile.H * (r || 0);
       
       ctx.save();
       ctx.strokeStyle = settings.color.O;
       
       ctx.beginPath();
-      ctx.arc(offsetX + g.tile.W/2, offsetY + g.tile.H/2, g.tile.H/div/2, 0, Math.PI*2);
+      ctx.arc(offsetX + g.tile.W / 2, offsetY + g.tile.H / 2, g.tile.H / div / 2, 0, Math.PI * 2);
       ctx.stroke();
       
       ctx.restore();
     },
     this.sign.getPos = function(x, y) {
-      var c = parseInt(x/g.cw*3);
-      var r = parseInt(y/g.ch*3);
+      var c = parseInt(x / g.cw * 3);
+      var r = parseInt(y / g.ch * 3);
       return [c, r];
     },
       
     this.m = marg || 15; // Margin
     
     this.cross = function (id) {
-      var g = this,
-          ctx = g.ctx;
+      var g = this;
+      var ctx = g.ctx;
       let dir = id.split('')[0];
       let step = id.split('')[1];
       
@@ -231,13 +232,13 @@ var grid = function (cw, ch, dim, marg) {
       
       switch (dir) {
         case 'r': {
-          ctx.moveTo(0 + this.m, step * g.tile.H + g.tile.H/2);
-          ctx.lineTo(cw - this.m, step * g.tile.H + g.tile.H/2);
+          ctx.moveTo(0 + this.m, step * g.tile.H + g.tile.H / 2);
+          ctx.lineTo(cw - this.m, step * g.tile.H + g.tile.H / 2);
           break;
         }
         case 'c': {
-          ctx.moveTo(step * g.tile.W + g.tile.W/2, 0 + this.m);
-          ctx.lineTo(step * g.tile.W + g.tile.W/2, ch - this.m);
+          ctx.moveTo(step * g.tile.W + g.tile.W / 2, 0 + this.m);
+          ctx.lineTo(step * g.tile.W + g.tile.W / 2, ch - this.m);
           break;
         }
         case 'd': {
@@ -251,7 +252,7 @@ var grid = function (cw, ch, dim, marg) {
           }
           break;
         }
-        default: `Houston, I have a problem`;
+        default: console.log('Houston, I have a problem');
       }
       
       ctx.stroke();
@@ -260,8 +261,8 @@ var grid = function (cw, ch, dim, marg) {
     
     this.clear = function () {this.ctx.clearRect(0, 0, this.ch, this.cw); };
     this.make = function () {
-      var g = this,
-          ctx = g.ctx;
+      var g = this;
+      var ctx = g.ctx;
       
       ctx.beginPath();
       ctx.strokeStyle = '#ccc';
@@ -269,16 +270,16 @@ var grid = function (cw, ch, dim, marg) {
       ctx.lineCap = 'round';
       for (var i = 1; i < g.dimension; i++) {
         // Vertical lines
-        ctx.moveTo(g.tile.W*i, g.m);
-        ctx.lineTo(g.tile.W*i, g.ch-g.m);
+        ctx.moveTo(g.tile.W * i, g.m);
+        ctx.lineTo(g.tile.W * i, g.ch - g.m);
 
         // Horizontal lines
-        ctx.moveTo(g.m, g.tile.H*i);
-        ctx.lineTo(g.cw-g.m, g.tile.H*i);
+        ctx.moveTo(g.m, g.tile.H * i);
+        ctx.lineTo(g.cw - g.m, g.tile.H * i);
       }
       ctx.stroke();
-    }
-  })()
+    };
+  })();
 };
 
 // Computer AI
@@ -290,9 +291,9 @@ var comp = function () {
   var stepped = false;
   
   var corners = [
-                  0, 2,
-                  6, 8
-                ];
+    0, 2,
+    6, 8
+  ];
   
   // Sort directions by usage
   var top = (() => {
@@ -325,9 +326,7 @@ var comp = function () {
     // Only for console view
     let view = {};
     
-    srt.map((e) => {
-      view[e.id] = e.val.join('');
-    });
+    srt.map((e) => view[e.id] = e.val.join(''));
     
     if (settings.debug) console.log('Main list view:', view);
     
@@ -350,7 +349,7 @@ var comp = function () {
       X: (() => cache.filter(e => e.val.indexOf('X') > -1))(),
     };
     
-    if (settings.debug) console.log("Halflings are: ", "O:", halfling.O[0], "X:", halfling.X[0]);
+    if (settings.debug) console.log('Halflings are: ', 'O:', halfling.O[0], 'X:', halfling.X[0]);
     
     return halfling;
   })();
@@ -361,7 +360,7 @@ var comp = function () {
   if (game.getTurn() > 1 && game.turn < 9) {
     let halflings = potentials;
     
-    let cpuSign = (player.sign === "O") ? 'X' : 'O';
+    let cpuSign = (player.sign === 'O') ? 'X' : 'O';
     let userSign = player.sign;
     let cpu =  halflings[cpuSign][0];
     let user = halflings[userSign][0];
@@ -393,17 +392,17 @@ var comp = function () {
           break;
         }
         case 'd': {
-          r = arr.indexOf('-')
+          r = arr.indexOf('-');
 
           if (index == 'd1') {
             c = r;
           }
           if (index == 'd2') {
-            c = dimension-1-r;
+            c = dimension - 1 - r;
           }
           break;
         }
-        default: `Houston, I have a problem`;
+        default: console.log('Houston, I have a problem');
       }
 
       if (settings.debug) console.log(arr, index, c, r);
@@ -433,45 +432,45 @@ var comp = function () {
       while(f[corners[rand]] !== '-' && used < 4) {
         rand = Math.floor(Math.random() * 4);
       }
-      if (settings.debug) console.log("Selected corner: ", rand);
+      if (settings.debug) console.log('Selected corner: ', rand);
       return rand;
     })();
     
     switch(whichCorner) {
       case -1: if (settings.debug) console.log('No more corners left!');
-      break;
+        break;
       case 0: {
         c = 0;
         r = 0;
       }
-      break;
+        break;
       case 1: {
-        c = dimension-1;
+        c = dimension - 1;
         r = 0;
       }
-      break;
+        break;
       case 2: {
         c = 0;
-        r = dimension-1;
+        r = dimension - 1;
       }
-      break;
+        break;
       case 3: {
-        c = dimension-1;
-        r = dimension-1;
+        c = dimension - 1;
+        r = dimension - 1;
       }
-      break;
-      default: console.log("Something went wrong, Yikes!")
-     }
+        break;
+      default: console.log('Something went wrong, Yikes!');
+    }
     
     if (whichCorner > -1) stepped = true;
   }
     
   if (stepped) { 
-    if (settings.debug) console.log("Position: ", c, "/", r);
+    if (settings.debug) console.log('Position: ', c, '/', r);
     
     if (game.addSign(c, r)) game.nextTurn();
   }
-}
+};
 
 var makeGrid = function () {
   g = grid(400, 400);
@@ -487,27 +486,26 @@ var makeGrid = function () {
     
     if (game.status == 'run' && sign() !== player.sign) setTimeout(comp, 300); // Wait 300 msec for implement sleep(300) function, because comp too fast answer and turn chance don't shown
   });
-}
+};
 
 var placeSign = function (evt, player) { // For player
   var x = evt.offsetX;
   var y = evt.offsetY;
 
   if (game.addSign(...g.sign.getPos(x, y))) game.nextTurn();
-}
+};
 
 // FUTURE Score counting
-$("#signX, #signO").on('click', function (evt) {
-  var choosed = evt.target.id;
+$('#signX, #signO').on('click', function (evt) {
+  let choosed = evt.target.id;
   player.sign = choosed.slice(-1); // Gets sign from ID (last char)
   $orig = $(this); // Choosed one
   $origS = $orig.siblings(); // Other elements
-  $choice = $(".choice"); // Layout for Choice
+  $choice = $('.choice'); // Layout for Choice
   
   $origS.fadeOut().promise().done(function () {
     $orig.addClass('pulse').delay(1000).queue('fx', function () {
       $choice.fadeOut('slow').promise().done(makeGrid);
     });
   });
-})
-
+});

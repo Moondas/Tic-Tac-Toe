@@ -1,9 +1,10 @@
 {
   "name": "tic-tac-toe",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint ./js --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -11,13 +12,17 @@
     "url": "git+https://gitlab.com/Moondas/Tic-Tac-Toe.git"
   },
   "author": "Peter Vigh",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://gitlab.com/Moondas/Tic-Tac-Toe/issues"
   },
   "homepage": "https://gitlab.com/Moondas/Tic-Tac-Toe#README",
   "devDependencies": {
     "angular-material": "^1.1.3",
+    "eslint": "^5.4.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "grunt": "^1.0.3",
     "grunt-browser-sync": "^2.2.0",
     "grunt-contrib-pug": "^1.0.0",
     "grunt-contrib-sass": "^1.0.0",
